@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:semanas/OptionScreen.dart';
+import 'package:semanas/Week/WeekManagement.dart';
 import 'package:semanas/database/Database.dart';
 import 'package:semanas/database/NoteModel.dart';
 import 'Designs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'EditNoteScreen.dart';
-import 'package:gradient_app_bar/gradient_app_bar.dart';
 
 void main() => runApp(MyApp());
 
@@ -36,20 +36,12 @@ var alreadyClicked = false;
 const String PREF_HASCURRENTWEEK = "hasCurrentWeek";
 
 class _MyHomePageState extends State<MyHomePage> {
-  //strings de dias da semana
-  var weekdays = [];
-
-  //strings de datas completas
-  var strdate = [];
-
-  List<Widget> listDays = [];
-
-  //******************* CONSTRUTOR **********************************
-
   _MyHomePageState() {
-    _hasWeekEnded();
+    WeekUtils.hasWeekEnded()
+        .then((var res) => {res ? _showDialog("end_week") : null});
+
     _loadSharedPrefs();
-    _deletePastDay();
+    WeekUtils.deletePastDay().then((var res) => {setState(() {})});
   }
 
   //************ PREFS **********************************************
@@ -62,102 +54,11 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<bool> _loadSharedPrefs() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final hasCurrentWeek = prefs.getBool(PREF_HASCURRENTWEEK) ?? false;
-    print("_loadSharedPrefs()\nPREF hasCurrentWeek: ${hasCurrentWeek.toString()}");
+    print(
+        "_loadSharedPrefs()\nPREF hasCurrentWeek: ${hasCurrentWeek.toString()}");
     alreadyClicked = hasCurrentWeek;
     setState(() {});
     return hasCurrentWeek;
-  }
-
-  //***********************CONSTRUÇÃO E GERENCIAMENTO DA SEMANA*************************
-
-  _deletePastDay() async {
-    DateTime post = DateTime.now();
-    print("_deletePastDay: \n DIA DE HOJE " + post.toString());
-    DBProvider.db.getDays().then((var res) {
-      if(res != null){
-        for(String day in res){
-          if(post.difference(DateTime.parse(day)).inDays >= 1){
-            DBProvider.db.deleteDay(day);
-            setState(() {});
-          }
-        }
-      }
-    });
-  }
-
-  _hasWeekEnded() async {
-    DateTime today = DateTime.now();
-    print("_hasWeekEnded: \n HOJE " + today.toString());
-    DBProvider.db.getLast().then((var res) {
-      if (res != null) {
-        print("ÚLTIMO DIA DA SEMANA: "+res.day);
-        if (today.difference(DateTime.parse(res.day)).inDays >= 1) {
-          _showDialog("end_week");
-        } else {
-          print("_hasWeekEnded: \n não é");
-        }
-      }
-    });
-  }
-
-  _buildWeek() {
-    var data = new DateTime.now();
-    //dias
-    var days = [];
-    bool virouMes = false;
-    int dia = data.day, mes = data.month, ano = data.year;
-
-    for (int i = 0; i <= 7; i++) {
-      if (mes == 2 && dia == 28) {
-        days.add(28);
-        dia = 1;
-        virouMes = true;
-      } else if (mes == 4 && dia == 30 || mes == 6 && dia == 30 || mes == 9 && dia == 30 || mes == 11 && dia == 30) {
-        days.add(30);
-        dia = 1;
-        virouMes = true;
-      } else if (dia == 31) {
-        days.add(31);
-        dia = 1;
-        virouMes = true;
-      } else {
-        days.add(dia++);
-      }
-
-      print("_buildWeek(): \n" + days[i].toString() + "/" + mes.toString());
-
-      strdate.add(buildStringDate(days[i], mes, ano));
-      print(strdate);
-
-      var newdate = DateTime.parse(strdate[i]);
-      weekdays.add(_intForWeek(newdate.weekday));
-
-      if (virouMes) {
-        mes = mes + 1;
-        virouMes = false;
-      }
-    }
-  }
-
-  String buildStringDate(int dia, int mes, int ano) {
-    if (dia < 10 && mes < 10) {
-      return "${ano.toString()}-0${mes.toString()}-0${dia.toString()} 20:00:01";
-
-    } else if (dia >= 10 && mes < 10) {
-
-      return "${ano.toString()}-0${mes.toString()}-${dia.toString()} 20:00:01";
-    } else if (dia < 10 && mes >= 10) {
-
-      return "${ano.toString()}-${mes.toString()}-0${dia.toString()} 20:00:01";
-    } else {
-
-      return "${ano.toString()}-${mes.toString()}-${dia.toString()} 20:00:01";
-    }
-  }
-
-  _intForWeek(int weekCode) {
-    var weekdays = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado","domingo"];
-    return weekdays[weekCode - 1];
   }
 
   //**************************METODOS QUE CRIAM ICONES DA APP BAR***********************************
@@ -197,13 +98,13 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: GradientAppBar(
-        backgroundColorStart: primary_yellow,
-        backgroundColorEnd: Color.fromRGBO( 255, 255, 102,1),
-        elevation: 1,
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 2,
         title: Text(
           widget.title,
-          style: TextStyle(color: pretty_black),
+          style: TextStyle(color: primary_dark_yellow),
         ),
         actions: <Widget>[_buildPlusButton(), _buildOptionsButton()],
       ),
@@ -211,98 +112,100 @@ class _MyHomePageState extends State<MyHomePage> {
           future: DBProvider.db.getWeek(),
           builder: (BuildContext context, AsyncSnapshot<List<Notes>> snapshot) {
             if (snapshot.hasData) {
-              return ListView.builder(
+              return GridView.builder(
                   itemCount: snapshot.data.length,
+                  gridDelegate: new SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2),
                   itemBuilder: (BuildContext context, int index) {
                     Notes item = snapshot.data[index];
                     print(item.day);
                     return Card(
                         elevation: 2,
-                        child: ExpansionTile(
-                          title: _roundAdvice(item.note, item.title, item.day),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: <Widget>[
-                            Column(
-                              children: <Widget>[
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Row(
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Row(
+                                children: <Widget>[
+                                  Text(
+                                    item.weekday,
+                                    style: subtitleStyle,
+                                  )
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(left: 8, right: 8),
+                              child: Divider(
+                                height: 12,
+                                color: clear_grey,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  left: 8, top: 8, bottom: 8),
+                              child: Row(
+                                children: <Widget>[
+                                  Flexible(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Text(
+                                          _isTitleNull(item.title),
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 22),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  left: 10, bottom: 8, right: 8),
+                              child: Row(
+                                children: <Widget>[
+                                  Flexible(
+                                      child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: <Widget>[
                                       Text(
-                                        item.weekday,
-                                        style: subtitleStyle,
-                                      )
+                                          _isNoteNull(item.note, item.title)),
                                     ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.only(left: 8, right: 8),
-                                  child: Divider(
-                                    height: 12,
-                                    color: clear_grey,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 8, top: 8, bottom: 8),
-                                  child: Row(
-                                    children: <Widget>[
-                                      Flexible(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: <Widget>[
-                                            Text(
-                                              _isTitleNull(item.title),
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 22),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.only(left: 10, bottom: 8, right:8),
-                                  child: Row(
-                                    children: <Widget>[
-                                      Flexible(child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: <Widget>[
-                                          Text(_isNoteNull(item.note, item.title)),
-                                        ],
-                                      ))
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.only(left: 8, right: 8),
-                                  child: Divider(
-                                    height: 12,
-                                    color: clear_grey,
-                                  ),
-                                ),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: <Widget>[
-                                    IconButton(
-                                        icon: _changeNoteIcon(item.note),
-                                        onPressed: () {
-                                          Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      EditNoteScreen(
-                                                        day: item.day,
-                                                        title: item.title,
-                                                        note: item.note,
-                                                      )));
-                                        })
-                                  ],
-                                )
+                                  ))
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(left: 8, right: 8),
+                              child: Divider(
+                                height: 12,
+                                color: clear_grey,
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: <Widget>[
+                                IconButton(
+                                    icon: _changeNoteIcon(item.note),
+                                    onPressed: () {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  EditNoteScreen(
+                                                    day: item.day,
+                                                    title: item.title,
+                                                    note: item.note,
+                                                  )));
+                                    })
                               ],
                             )
                           ],
@@ -318,15 +221,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _createWeek() {
-    _buildWeek();
+    WeekUtils wu = new WeekUtils();
 
-    var strdate = [];
-    for (int i = 0; i <= 7; i++) {
-      String parseData = this.strdate[i].toString().substring(0, 10);
-      strdate.add(parseData);
-    }
+    wu.buildWeek();
 
-    DBProvider.db.createWeek(strdate, weekdays);
     alreadyClicked = true;
     _saveNewPref(alreadyClicked);
   }
@@ -356,9 +254,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   String _isNoteNull(String note, String title) {
     if (note == null || note.isEmpty || note == " ") {
-      if(title == null || title.isEmpty || title == " "){
+      if (title == null || title.isEmpty || title == " ") {
         return "Nenhuma nota para hoje :/";
-      }else {
+      } else {
         return "Que tal colocar um corpo para essa nota?";
       }
     } else {
@@ -366,28 +264,28 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  var _isTitleNull = (String title) => (title == null) ?  "" : title;
+  var _isTitleNull = (String title) => (title == null) ? "" : title;
 
   _roundAdvice(String note, String title, String day) {
-    if ((note != null && note.isNotEmpty && note != " ") || (title != null && title.isNotEmpty && title != " ")) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Text(_showFriendlyDate(day)),
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: new BoxDecoration(
-                  color: primary_yellow,
-                  shape: BoxShape.circle,
-                ),
+    if ((note != null && note.isNotEmpty && note != " ") ||
+        (title != null && title.isNotEmpty && title != " ")) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          Text(_showFriendlyDate(day)),
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: new BoxDecoration(
+                color: primary_yellow,
+                shape: BoxShape.circle,
               ),
-            )
-          ],
-        );
-
+            ),
+          )
+        ],
+      );
     } else {
       return Text(_showFriendlyDate(day));
     }
