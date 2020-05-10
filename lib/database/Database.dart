@@ -46,12 +46,11 @@ class DBProvider{
     return res;
   }
 
-  addNote(String day, String title, String note) async{
+  Future<void> addNote(String day, String title, String note) async{
     final db = await database;
     String query = "UPDATE week SET note = '$note', title='$title' WHERE day = '$day'";
     print(query);
-    var res = await db.rawInsert(query);
-    return res;
+    await db.rawUpdate(query);
   }
 
   deleteWeek() async{
@@ -74,6 +73,9 @@ class DBProvider{
     var res = await db.query("week");
     List<Notes> notes =
         res.isNotEmpty ? res.map((c) => Notes.fromJson(c)).toList() : [];
+
+    notes.map((e) => print(e.note));  
+    
     return notes;
   }
 

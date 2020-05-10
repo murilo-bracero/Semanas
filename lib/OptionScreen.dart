@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:semanas/database/Database.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'Preferences.dart';
 import 'Designs.dart';
 import 'main.dart';
 
 class OptionScreen extends StatelessWidget {
-
-  void _saveNewPref(bool hasCurrentWeek) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool(PREF_HASCURRENTWEEK, hasCurrentWeek);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +32,7 @@ class OptionScreen extends StatelessWidget {
                               DBProvider.db.deleteWeek();
                               print("Semana deletada");
                               alreadyClicked = false;
-                              _saveNewPref(alreadyClicked);
+                              saveNewPref(alreadyClicked);
                               Navigator.pop(context);
                             },
                             icon: Icon(
