@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:semanas/OptionScreen.dart';
 import 'package:semanas/Week/WeekManagement.dart';
 import 'package:semanas/database/Database.dart';
 import 'package:semanas/database/NoteModel.dart';
+import 'Preferences.dart';
 import 'Designs.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'EditNoteScreen.dart';
 
 void main() => runApp(MyApp());
@@ -33,35 +34,19 @@ class MyHomePage extends StatefulWidget {
 }
 
 var alreadyClicked = false;
-const String PREF_HASCURRENTWEEK = "hasCurrentWeek";
 
 class _MyHomePageState extends State<MyHomePage> {
   _MyHomePageState() {
     WeekUtils.hasWeekEnded()
-        .then((var res) => {res ? _showDialog("end_week") : null});
+        .then((var res) => res ? _showDialog("end_week") : null);
 
-    _loadSharedPrefs();
-    WeekUtils.deletePastDay().then((var res) => {setState(() {})});
+    loadSharedPrefs().then((value) {
+      alreadyClicked = value;
+      setState(() {});
+    });
+
+    WeekUtils.deletePastDay().then((var res) => setState(() {}));
   }
-
-  //************ PREFS **********************************************
-
-  void _saveNewPref(bool hasCurrentWeek) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool(PREF_HASCURRENTWEEK, hasCurrentWeek);
-  }
-
-  Future<bool> _loadSharedPrefs() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final hasCurrentWeek = prefs.getBool(PREF_HASCURRENTWEEK) ?? false;
-    print(
-        "_loadSharedPrefs()\nPREF hasCurrentWeek: ${hasCurrentWeek.toString()}");
-    alreadyClicked = hasCurrentWeek;
-    setState(() {});
-    return hasCurrentWeek;
-  }
-
-  //**************************METODOS QUE CRIAM ICONES DA APP BAR***********************************
 
   Widget _buildPlusButton() {
     if (!alreadyClicked) {
@@ -93,10 +78,24 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  //********************CONSTROI O DESIGN DA PAGINA*********************************
+  EdgeInsets _paddingForView(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    double padding;
+    const double top_bottom = 8;
+
+    if (width > 500) {
+      padding = (width) * 0.5; //5% of width padding
+    } else {
+      padding = 8;
+    }
+
+    return EdgeInsets.only(
+        left: padding, right: padding, top: top_bottom, bottom: top_bottom);
+  }
 
   @override
   Widget build(BuildContext context) {
+    print('builded');
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -112,105 +111,115 @@ class _MyHomePageState extends State<MyHomePage> {
           future: DBProvider.db.getWeek(),
           builder: (BuildContext context, AsyncSnapshot<List<Notes>> snapshot) {
             if (snapshot.hasData) {
-              return GridView.builder(
-                  itemCount: snapshot.data.length,
-                  gridDelegate: new SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2),
-                  itemBuilder: (BuildContext context, int index) {
-                    Notes item = snapshot.data[index];
-                    print(item.day);
-                    return Card(
-                        elevation: 2,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: <Widget>[
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Row(
-                                children: <Widget>[
-                                  Text(
-                                    item.weekday,
-                                    style: subtitleStyle,
-                                  )
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.only(left: 8, right: 8),
-                              child: Divider(
-                                height: 12,
-                                color: clear_grey,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 8, top: 8, bottom: 8),
-                              child: Row(
-                                children: <Widget>[
-                                  Flexible(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: <Widget>[
-                                        Text(
-                                          _isTitleNull(item.title),
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 22),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 10, bottom: 8, right: 8),
-                              child: Row(
-                                children: <Widget>[
-                                  Flexible(
-                                      child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+              return Container(
+                  child: Padding(
+                padding: _paddingForView(context),
+                child: StaggeredGridView.count(
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6,
+                    crossAxisCount:
+                        MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                    staggeredTiles: List.generate(
+                        snapshot.data.length, (index) => StaggeredTile.fit(1)),
+                    children: List.generate(snapshot.data.length, (int index) {
+                      Notes item = snapshot.data[index];
+                      return GridTile(
+                        child: Card(
+                            elevation: 2,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: <Widget>[
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Row(
                                     children: <Widget>[
                                       Text(
-                                          _isNoteNull(item.note, item.title)),
+                                        item.weekday,
+                                        style: subtitleStyle,
+                                      )
                                     ],
-                                  ))
-                                ],
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.only(left: 8, right: 8),
-                              child: Divider(
-                                height: 12,
-                                color: clear_grey,
-                              ),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: <Widget>[
-                                IconButton(
-                                    icon: _changeNoteIcon(item.note),
-                                    onPressed: () {
-                                      Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  EditNoteScreen(
-                                                    day: item.day,
-                                                    title: item.title,
-                                                    note: item.note,
-                                                  )));
-                                    })
+                                  ),
+                                ),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(left: 8, right: 8),
+                                  child: Divider(
+                                    height: 12,
+                                    color: clear_grey,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 8, top: 8, bottom: 8),
+                                  child: Row(
+                                    children: <Widget>[
+                                      Flexible(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: <Widget>[
+                                            Text(
+                                              _isTitleNull(item.title),
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 22),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 10, bottom: 8, right: 8),
+                                  child: Row(
+                                    children: <Widget>[
+                                      Flexible(
+                                          child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: <Widget>[
+                                          Text(_isNoteNull(
+                                              item.note, item.title)),
+                                        ],
+                                      ))
+                                    ],
+                                  ),
+                                ),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(left: 8, right: 8),
+                                  child: Divider(
+                                    height: 12,
+                                    color: clear_grey,
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: <Widget>[
+                                    IconButton(
+                                        icon: _changeNoteIcon(item.note),
+                                        onPressed: () {
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      EditNoteScreen(
+                                                        day: item.day,
+                                                        title: item.title,
+                                                        note: item.note,
+                                                      ))).then((value) {
+                                            setState(() {});
+                                          });
+                                        })
+                                  ],
+                                )
                               ],
-                            )
-                          ],
-                        ));
-                  });
+                            )),
+                      );
+                    })),
+              ));
             } else {
               return Center(
                 child: CircularProgressIndicator(),
@@ -226,11 +235,9 @@ class _MyHomePageState extends State<MyHomePage> {
     wu.buildWeek();
 
     alreadyClicked = true;
-    _saveNewPref(alreadyClicked);
+    saveNewPref(alreadyClicked);
   }
-
-  //******************GERENCIAMENTO DA NOTA *********************************
-
+  
   _showFriendlyDate(String date) {
     String dia = date.substring(8, 10);
     String mes = date.substring(5, 7);
@@ -266,7 +273,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   var _isTitleNull = (String title) => (title == null) ? "" : title;
 
-  _roundAdvice(String note, String title, String day) {
+  roundAdvice(String note, String title, String day) {
     if ((note != null && note.isNotEmpty && note != " ") ||
         (title != null && title.isNotEmpty && title != " ")) {
       return Row(
@@ -291,8 +298,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  //*********************MOSTRA UM DIALOG PARA O USUARIO ************************
-
   _showDialog(String s) {
     switch (s) {
       case "end_week":
@@ -311,7 +316,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       DBProvider.db.deleteWeek();
                       Navigator.of(context).pop();
                       alreadyClicked = false;
-                      _saveNewPref(alreadyClicked);
+                      saveNewPref(alreadyClicked);
                       setState(() {});
                     },
                     child: Padding(

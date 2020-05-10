@@ -34,9 +34,9 @@ class _EditNoteScreenState extends State<EditNoteScreen>{
   }
 
   _saveNote() {
-    DBProvider.db.addNote(day, titleController.text, noteController.text);
-    print("DAY " + day);
-    Navigator.pop(context);
+    DBProvider.db.addNote(day, titleController.text, noteController.text).then((value){
+      Navigator.pop(context);
+    });
   }
   @override
   Widget build(BuildContext context) {
