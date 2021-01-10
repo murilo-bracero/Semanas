@@ -71,3 +71,6 @@
 
 .flutter-plugins
 .flutter-plugins-dependencies
+
+.gradle/
+build/
