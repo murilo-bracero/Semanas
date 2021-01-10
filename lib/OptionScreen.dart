@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:semanas/database/Database.dart';
-import 'Preferences.dart';
 import 'Designs.dart';
+import 'Preferences.dart';
 import 'main.dart';
 
 class OptionScreen extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0.0,
         title: Text(
           "Opções",
-          style: TextStyle(color: pretty_black),
+          style: TextStyle(color: primary_dark_yellow),
         ),
       ),
       body: Center(
@@ -30,24 +31,17 @@ class OptionScreen extends StatelessWidget {
                         child: FlatButton.icon(
                             onPressed: () {
                               DBProvider.db.deleteWeek();
-                              print("Semana deletada");
                               alreadyClicked = false;
                               saveNewPref(alreadyClicked);
                               Navigator.pop(context);
                             },
                             icon: Icon(
                               Icons.delete,
-                              color: light_grey,
+                              color: black,
                             ),
                             label: Text("Deletar semana atual.")),
                       ),
                     ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 10.0, right: 10.0),
-                  child: Divider(
-                    color: light_grey,
                   ),
                 ),
               ],
