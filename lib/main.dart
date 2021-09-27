@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:semanas/OptionScreen.dart';
-import 'package:semanas/Week/WeekManagement.dart';
-import 'package:semanas/database/Database.dart';
-import 'package:semanas/database/NoteModel.dart';
-import 'package:semanas/widgets/NoteCell.dart';
-import 'Preferences.dart';
-import 'Designs.dart';
+import 'package:semanas/option_screen.dart';
+import 'package:semanas/service/week_service.dart';
+import 'package:semanas/widgets/note_cell.dart';
+import 'preferences.dart';
+import 'designs.dart';
+import 'model/note.dart';
 
 void main() => runApp(MyApp());
 
@@ -19,6 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.yellow,
       ),
+      darkTheme: ThemeData.dark(),
       home: MyHomePage(title: 'Semanas'),
     );
   }
@@ -37,7 +37,7 @@ var alreadyClicked = false;
 
 class _MyHomePageState extends State<MyHomePage> {
   _MyHomePageState() {
-    WeekUtils.hasWeekEnded().then((var res) => res
+    WeekService.hasWeekEnded().then((var res) => res
         ? _showDialog(
             "Sua Semana Acabou",
             "Iremos apagà-la para que você possa criar uma nova semana.\n"
@@ -50,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {});
     });
 
-    WeekUtils.deletePastDay().then((var res) => setState(() {}));
+    WeekService.deletePastDay().then((var res) => setState(() {}));
   }
 
   Widget _buildPlusButton() {
@@ -76,9 +76,10 @@ class _MyHomePageState extends State<MyHomePage> {
           icon: Icon(
             Icons.settings,
           ),
-          onPressed: () {
-            Navigator.push(context,
+          onPressed: () async {
+            await Navigator.push(context,
                 MaterialPageRoute(builder: (context) => OptionScreen()));
+            setState(() {});
           }),
     );
   }
@@ -112,8 +113,8 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: <Widget>[_buildPlusButton(), _buildOptionsButton()],
       ),
       body: FutureBuilder(
-          future: DBProvider.db.getWeek(),
-          builder: (BuildContext context, AsyncSnapshot<List<Notes>> snapshot) {
+          future: WeekService.getWeek(),
+          builder: (BuildContext context, AsyncSnapshot<List<Note>> snapshot) {
             if (snapshot.hasData) {
               return Container(
                   child: Padding(
@@ -126,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     staggeredTiles: List.generate(
                         snapshot.data.length, (index) => StaggeredTile.fit(1)),
                     children: List.generate(snapshot.data.length, (int index) {
-                      Notes item = snapshot.data[index];
+                      Note item = snapshot.data[index];
                       return GridTile(
                         child: NoteCell(item, setState),
                       );
@@ -142,9 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _createWeek() {
-    WeekUtils wu = new WeekUtils();
-
-    wu.buildWeek();
+    WeekService.createWeek();
 
     alreadyClicked = true;
     saveNewPref(alreadyClicked);
@@ -159,9 +158,9 @@ class _MyHomePageState extends State<MyHomePage> {
             content: Text(body),
             contentPadding: EdgeInsets.all(10),
             actions: <Widget>[
-              FlatButton(
+              TextButton(
                 onPressed: () {
-                  DBProvider.db.deleteWeek();
+                  WeekService.deleteWeek();
                   Navigator.of(context).pop();
                   alreadyClicked = false;
                   saveNewPref(alreadyClicked);

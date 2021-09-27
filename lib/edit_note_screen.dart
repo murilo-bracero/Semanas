@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:semanas/database/Database.dart';
-import 'Designs.dart';
-import 'Designs.dart';
-import 'Designs.dart';
-import 'Designs.dart';
+import 'package:semanas/service/week_service.dart';
+import 'designs.dart';
 
 class EditNoteScreen extends StatefulWidget {
   final String day;
@@ -37,8 +34,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   }
 
   _saveNote() {
-    DBProvider.db
-        .addNote(day, titleController.text, noteController.text)
+    WeekService.addNote(day, titleController.text, noteController.text)
         .then((value) {
       Navigator.pop(context);
     });
@@ -84,12 +80,18 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: <Widget>[
                       Flexible(
-                        child: RaisedButton.icon(
+                        child: ElevatedButton.icon(
                           onPressed: () {
                             _saveNote();
                           },
-                          color: primary_dark_yellow,
-                          elevation: 0,
+                          style: ButtonStyle(
+                              backgroundColor: MaterialStateProperty.all(
+                                  primary_dark_yellow),
+                              elevation: MaterialStateProperty.all(0),
+                              shape: MaterialStateProperty.all(
+                                  RoundedRectangleBorder(
+                                      borderRadius:
+                                          new BorderRadius.circular(30)))),
                           label: Text(
                             "Registrar Nota",
                             style: TextStyle(color: white),
@@ -98,8 +100,6 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
                             Icons.edit,
                             color: white,
                           ),
-                          shape: new RoundedRectangleBorder(
-                              borderRadius: new BorderRadius.circular(30)),
                         ),
                       ),
                     ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:semanas/database/Database.dart';
-import 'Designs.dart';
-import 'Preferences.dart';
+import 'package:semanas/service/week_service.dart';
+import 'designs.dart';
+import 'preferences.dart';
 import 'main.dart';
 
 class OptionScreen extends StatelessWidget {
@@ -28,16 +28,15 @@ class OptionScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       Expanded(
-                        child: FlatButton.icon(
+                        child: TextButton.icon(
                             onPressed: () {
-                              DBProvider.db.deleteWeek();
+                              WeekService.deleteWeek();
                               alreadyClicked = false;
                               saveNewPref(alreadyClicked);
                               Navigator.pop(context);
                             },
                             icon: Icon(
                               Icons.delete,
-                              color: black,
                             ),
                             label: Text("Deletar semana atual.")),
                       ),

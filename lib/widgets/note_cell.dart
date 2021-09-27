@@ -1,17 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:semanas/model/note.dart';
 
-import '../Designs.dart';
-import '../EditNoteScreen.dart';
-import '../database/NoteModel.dart';
-import '../Utils.dart';
+import '../designs.dart';
+import '../edit_note_screen.dart';
+import '../utils.dart';
 
 // ignore: must_be_immutable
 class NoteCell extends StatelessWidget {
-  Notes _note;
+  Note _note;
   Function _updateState;
 
-  NoteCell(Notes note, Function updateState) {
+  NoteCell(Note note, Function updateState) {
     this._note = note;
     this._updateState = updateState;
   }
@@ -98,7 +98,7 @@ class NoteCell extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                               builder: (context) => EditNoteScreen(
-                                    day: _note.day,
+                                    day: _note.day.toIso8601String(),
                                     title: _note.title,
                                     note: _note.note,
                                   ))).then((value) {
