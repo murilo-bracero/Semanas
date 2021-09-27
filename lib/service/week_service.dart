@@ -15,11 +15,10 @@ class WeekService {
     }
   }
 
-  static Future<void> addNote(String day, String title, String note) async {
+  static Future<void> addNote(Note note) async {
     final db = await DatabaseEager.db.database;
-    String query =
-        "UPDATE week SET note = '$note', title='$title' WHERE day = '$day'";
-    await db.rawUpdate(query);
+    await db.update('week', note.toJson(),
+        where: 'day = ?', whereArgs: [note.day.toIso8601String()]);
   }
 
   static deleteWeek() async {
@@ -29,9 +28,7 @@ class WeekService {
 
   static _deleteDay(String day) async {
     final db = await DatabaseEager.db.database;
-    String query = "DELETE FROM week WHERE day = '$day'";
-    var res = await db.rawDelete(query);
-    return res;
+    return db.delete('week', where: 'day = ?', whereArgs: [day]);
   }
 
   static Future<List<Note>> getWeek() async {
@@ -50,11 +47,10 @@ class WeekService {
 
   static Future<List<String>> _getDays() async {
     final db = await DatabaseEager.db.database;
-    String query = "SELECT day FROM week";
-    var res = await db.rawQuery(query);
+    var res = await db.query('week', columns: ['day']);
 
     if (res.isNotEmpty) {
-      res.map((e) => Note.fromJson(e).day.toIso8601String());
+      return List.generate(res.length, (index) => res[index]['day']);
     }
 
     return [];

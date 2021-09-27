@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:semanas/model/note.dart';
 import 'package:semanas/service/week_service.dart';
 import 'designs.dart';
 
@@ -29,12 +30,11 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     this.day = day;
     titleController.text = (title == " ") ? null : title;
     noteController.text = (note == " ") ? null : note;
-
-    print('$day, $title, $note');
   }
 
   _saveNote() {
-    WeekService.addNote(day, titleController.text, noteController.text)
+    WeekService.addNote(Note(
+            DateTime.parse(day), titleController.text, noteController.text))
         .then((value) {
       Navigator.pop(context);
     });
