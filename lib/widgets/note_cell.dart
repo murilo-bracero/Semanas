@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:semanas/model/note.dart';
+import 'package:semanas/model/todo_item.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../designs.dart';
 import '../edit_note_screen.dart';
@@ -16,16 +20,43 @@ class NoteCell extends StatelessWidget {
     this._updateState = updateState;
   }
 
-  String _isNoteNull(String note, String title) {
+  String _displayNoteText(String note, String title) {
     if (note == null || note.trim().isEmpty) {
       if (title == null || title.trim().isEmpty) {
         return "Nenhuma nota para hoje :/";
       } else {
         return "Que tal colocar um corpo para essa nota?";
       }
-    } else {
-      return note;
     }
+
+    List<String> text = [];
+
+    if (note.contains(LIST_START_ID)) {
+      var parts = note.split("//");
+
+      for (var part in parts) {
+        if (part.startsWith(LIST_START_ID) && part.endsWith(LIST_END_ID)) {
+          part = part.replaceAll(LIST_START_ID, '');
+          part = part.replaceAll(LIST_END_ID, '');
+          part = part.trim();
+
+          List t = jsonDecode(part);
+          List<ToDoItem> items =
+              t.map((raw) => ToDoItem(raw['checked'], raw['text'])).toList();
+
+          var parsed = items.map((item) => item.checked
+              ? '- [x] ~~${item.text}~~\n'
+              : '- [ ] ${item.text}\n');
+
+          text.add(parsed.join(""));
+          continue;
+        }
+
+        text.add(part);
+      }
+    }
+
+    return text.join("\n");
   }
 
   @override
@@ -74,7 +105,8 @@ class NoteCell extends StatelessWidget {
                       child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(_isNoteNull(_note.note, _note.title)),
+                      MarkdownBody(
+                          data: _displayNoteText(_note.note, _note.title)),
                     ],
                   ))
                 ],
@@ -84,7 +116,7 @@ class NoteCell extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
                 IconButton(
-                    icon: _note.note == null
+                    icon: _note.note.isEmpty
                         ? new Icon(
                             Icons.add,
                             color: primary_dark_yellow,
