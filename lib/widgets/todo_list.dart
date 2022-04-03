@@ -76,6 +76,7 @@ class _ToDoListState extends State<ToDoList> with TickerProviderStateMixin {
     return ListView.builder(
       itemCount: items.length,
       shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) => Row(
         children: [
           Expanded(
