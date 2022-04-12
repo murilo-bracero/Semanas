@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:semanas/main.dart';
 import 'package:semanas/model/note.dart';
 import 'package:semanas/model/todo_item.dart';
 import 'package:semanas/service/week_service.dart';
@@ -12,13 +13,19 @@ class EditNoteScreen extends StatefulWidget {
   final String day;
   final String title;
   final String note;
+  final Function updateParentState;
 
-  EditNoteScreen({Key key, @required this.day, this.title, this.note})
+  EditNoteScreen(
+      {Key key,
+      @required this.day,
+      this.title,
+      this.note,
+      this.updateParentState})
       : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
-    return _EditNoteScreenState(day, title, note);
+    return _EditNoteScreenState(day, title, note, updateParentState);
   }
 }
 
@@ -27,19 +34,22 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
   List<Widget> columnWidgets = [];
   List<TextEditingController> controllers = [];
   List<FocusNode> focuses = [];
+  Function updateParentState;
 
   String day;
   String note;
 
   var titleNode = FocusNode();
 
-  _EditNoteScreenState(String day, String title, String note) {
+  _EditNoteScreenState(
+      String day, String title, String note, Function updateParentState) {
     this.day = day;
     this.note = note;
+    this.updateParentState = updateParentState;
     titleController.text = (title.isEmpty) ? null : title;
   }
 
-  _saveNote() {
+  _saveNote() async {
     String body = '';
 
     columnWidgets.forEach((widget) {
@@ -56,10 +66,8 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       }
     });
 
-    WeekService.addNote(Note(DateTime.parse(day), titleController.text, body))
-        .then((value) {
-      Navigator.pop(context);
-    });
+    await WeekService.addNote(
+        Note(DateTime.parse(day), titleController.text, body));
   }
 
   _addTextOnSelected() {
@@ -152,7 +160,7 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
           Flexible(
             child: ElevatedButton.icon(
               onPressed: () {
-                _saveNote();
+                _saveNote().then((value) => Navigator.pop(context));
               },
               style: ButtonStyle(
                   backgroundColor:
@@ -182,8 +190,6 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
 
     columnWidgets.add(_buildTitleContainer());
 
-    print(this.note);
-
     if (!this.note.contains(LIST_START_ID)) {
       var controller = TextEditingController();
       controller.text = this.note;
@@ -195,8 +201,6 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
       var parts = this.note.split("//");
 
       for (var part in parts) {
-        print("PART " + part);
-
         if (part.startsWith(LIST_START_ID) && part.endsWith(LIST_END_ID)) {
           part = part.replaceAll(LIST_START_ID, '');
           part = part.replaceAll(LIST_END_ID, '');
@@ -221,6 +225,14 @@ class _EditNoteScreenState extends State<EditNoteScreen> {
     columnWidgets.add(_buildRegisterNoteButton());
 
     setState(() {});
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    if (userPreferences.hasAutosave) {
+      _saveNote().then((value) => updateParentState(() {}));
+    }
   }
 
   @override

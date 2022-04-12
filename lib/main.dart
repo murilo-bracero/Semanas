@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:semanas/model/user_preferences.dart';
 import 'package:semanas/option_screen.dart';
 import 'package:semanas/service/week_service.dart';
+import 'package:semanas/theme.dart';
 import 'package:semanas/widgets/note_cell.dart';
 import 'preferences.dart';
 import 'designs.dart';
@@ -15,10 +17,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Semanas',
-      theme: ThemeData(
-        primarySwatch: Colors.yellow,
-      ),
-      darkTheme: ThemeData.dark(),
+      theme: lightTheme,
+      darkTheme: darkTheme,
       home: MyHomePage(title: 'Semanas'),
     );
   }
@@ -33,7 +33,7 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-var alreadyClicked = false;
+UserPreferences userPreferences = UserPreferences(false, false);
 
 class _MyHomePageState extends State<MyHomePage> {
   _MyHomePageState() {
@@ -45,8 +45,8 @@ class _MyHomePageState extends State<MyHomePage> {
             "Ok, apagar.")
         : null);
 
-    loadSharedPrefs().then((value) {
-      alreadyClicked = value;
+    find().then((value) {
+      userPreferences = value;
       setState(() {});
     });
 
@@ -54,7 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildPlusButton() {
-    if (!alreadyClicked) {
+    if (!userPreferences.hasCurrentWeek) {
       return Flexible(
           child: IconButton(
         onPressed: () {
@@ -145,8 +145,8 @@ class _MyHomePageState extends State<MyHomePage> {
   _createWeek() {
     WeekService.createWeek();
 
-    alreadyClicked = true;
-    saveNewPref(alreadyClicked);
+    userPreferences.hasCurrentWeek = true;
+    save(userPreferences);
   }
 
   _showDialog(String title, String body, String accept) {
@@ -162,8 +162,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () {
                   WeekService.deleteWeek();
                   Navigator.of(context).pop();
-                  alreadyClicked = false;
-                  saveNewPref(alreadyClicked);
+                  userPreferences.hasCurrentWeek = false;
+                  save(userPreferences);
                   setState(() {});
                 },
                 child: Padding(

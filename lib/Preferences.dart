@@ -1,15 +1,19 @@
+import 'package:semanas/model/user_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String PREF_HASCURRENTWEEK = "hasCurrentWeek";
+const String PREF_AUTOSAVE = "hasAutosave";
 
-void saveNewPref(bool hasCurrentWeek) async {
+void save(UserPreferences up) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setBool(PREF_HASCURRENTWEEK, hasCurrentWeek);
+  prefs.setBool(PREF_HASCURRENTWEEK, up.hasCurrentWeek);
+  prefs.setBool(PREF_AUTOSAVE, up.hasAutosave);
 }
 
-Future<bool> loadSharedPrefs() async {
+Future<UserPreferences> find() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   final hasCurrentWeek = prefs.getBool(PREF_HASCURRENTWEEK) ?? false;
+  final hasAutosave = prefs.getBool(PREF_AUTOSAVE) ?? false;
 
-  return hasCurrentWeek;
+  return UserPreferences(hasAutosave, hasCurrentWeek);
 }

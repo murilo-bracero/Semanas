@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:semanas/colors.dart';
 import 'package:semanas/model/todo_item.dart';
 
 class ToDoList extends StatefulWidget {
@@ -70,6 +71,39 @@ class _ToDoListState extends State<ToDoList> with TickerProviderStateMixin {
     setState(() {});
   }
 
+  int _reverseSort() {
+    int index = items.length - 1;
+    items.reversed.forEach((item) {
+      if (item.checked) {
+        index--;
+      }
+    });
+
+    return index;
+  }
+
+  _onToDoItemChecked(bool value, int index) {
+    if (value) {
+      if (index == 0 && items.length == 1) {
+        setState(() {
+          items.add(ToDoItem(false, ''));
+        });
+        return;
+      }
+      setState(() {
+        items[index].checked = value;
+        items.add(items[index]);
+        items.removeAt(index);
+      });
+    } else {
+      setState(() {
+        items[index].checked = value;
+        items.insert(_reverseSort(), items[index]);
+        items.removeAt(index + 1);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     _buildListItem();
@@ -83,11 +117,7 @@ class _ToDoListState extends State<ToDoList> with TickerProviderStateMixin {
             flex: 1,
             child: CheckboxListTile(
                 value: items[index].checked,
-                onChanged: (value) {
-                  setState(() {
-                    items[index].checked = value;
-                  });
-                }),
+                onChanged: (value) => _onToDoItemChecked(value, index)),
           ),
           Expanded(
             flex: 4,

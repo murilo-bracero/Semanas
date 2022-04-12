@@ -54,6 +54,8 @@ class NoteCell extends StatelessWidget {
 
         text.add(part);
       }
+    } else {
+      return note;
     }
 
     return text.join("\n");
@@ -73,7 +75,7 @@ class NoteCell extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 9.0, bottom: 12),
                   child: Text(
                     _note.weekday.capitalize(),
-                    style: subtitleStyle,
+                    style: Theme.of(context).textTheme.subtitle1,
                   ),
                 )
               ],
@@ -133,6 +135,7 @@ class NoteCell extends StatelessWidget {
                                     day: _note.day.toIso8601String(),
                                     title: _note.title,
                                     note: _note.note,
+                                    updateParentState: _updateState,
                                   ))).then((value) {
                         _updateState(() {});
                       });
